@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aesthetic Physique Hub - 3D Transformation</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            accent: '#10b981', // Neon Emerald
+                            violet: '#a855f7'
+                        },
+                        darkbg: '#090d16',
+                        glass: 'rgba(15, 23, 42, 0.75)'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Three.js for 3D Machine/Equipment Visualizations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #05080f;
+            color: #f3f4f6;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-card-active {
+            background: rgba(30, 41, 59, 0.9);
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.2);
+        }
+
+        .glow-button {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glow-button:hover {
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.7);
+            transform: translateY(-2px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #818cf8 0%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 3D Canvas Container */
+        #canvas-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            outline: none;
+            cursor: grab;
+        }
+        #canvas-container canvas:active {
+            cursor: grabbing;
+        }
+
+        .modal-enter {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between pb-12">
+
+    <header class="sticky top-0 z-40 glass-card border-b border-gray-800/80 px-4 lg:px-8 py-4 mb-6">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-accent flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                    <i class="fa-solid fa-dumbbell"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tight flex items-center gap-2">
+                        AESTHETIC<span class="gradient-text">FORGE 3D</span>
+                    </h1>
+                    <p class="text-xs text-gray-400">Pro Teen Transformation Protocol • 57kg &rarr; Lean Aesthetic</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 text-sm">
+                <div class="glass-card px-4 py-2 rounded-lg flex items-center gap-2">
+                    <i class="fa-solid fa-fire text-amber-400"></i>
+                    <span>Streak: <strong id="headerStreak" class="text-white">0</strong></span>
+                </div>
+                <div class="glass-card px-4 py-2 rounded-lg flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-day text-brand-accent"></i>
+                    <strong id="headerTodayDay" class="text-brand-accent uppercase text-xs">Loading...</strong>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 w-full space-y-8 flex-grow">
+
+        <section class="glass-card rounded-3xl p-6 md:p-8 relative overflow-hidden border-slate-700/50">
+            <div class="absolute -right-20 -bottom-20 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-20 -top-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center relative z-10">
+                <div class="md:col-span-2 space-y-2">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 border border-brand-500/30 text-xs font-semibold uppercase tracking-wider text-brand-400 mb-2">
+                        <i class="fa-solid fa-bolt"></i> 9-Month Blueprint Active
+                    </div>
+                    <h2 class="text-3xl font-extrabold text-white">Target: V-Taper & Abs</h2>
+                    <p class="text-gray-400 max-w-lg">Tailored for a 15-year-old at 5'6"-5'7". We are shifting your 57kg frame into a muscular, highly defined aesthetic physique using hyper-focused progressive overload.</p>
+                </div>
+                <div class="flex flex-col gap-3">
+                    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/50 shadow-inner flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-gray-400 block uppercase tracking-wide">Current Wt</span>
+                            <span class="text-lg font-bold text-white">57.0 kg</span>
+                        </div>
+                        <i class="fa-solid fa-arrow-right text-gray-600"></i>
+                        <div class="text-right">
+                            <span class="text-xs text-brand-400 block uppercase tracking-wide">Target Wt</span>
+                            <span class="text-lg font-bold text-brand-400">64.0 kg</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-days text-brand-500"></i>
+                    Interactive Schedule
+                </h3>
+                <span class="text-xs text-gray-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">Click a day to load routine</span>
+            </div>
+            <div class="grid grid-cols-7 gap-2 sm:gap-4" id="dayTabsContainer">
+                <!-- Day tabs dynamically injected here -->
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left 2 Columns: Dynamic Workout List -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="glass-card rounded-3xl p-6 sm:p-8 border-slate-700/50">
+                    <div class="flex flex-col sm:flex-row sm:items-end justify-between pb-6 border-b border-slate-800/80 gap-4">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <span id="activeDayBadge" class="px-3 py-1 rounded-md text-xs font-bold bg-brand-500/20 text-brand-400 border border-brand-500/30 tracking-widest">
+                                    MONDAY
+                                </span>
+                                <span id="activeFocusTitle" class="text-sm font-medium text-emerald-400">Push A (Chest, Shoulders & Core)</span>
+                            </div>
+                            <h3 id="activeRoutineName" class="text-2xl font-bold text-white">Upper Chest & Side Delt Blast</h3>
+                        </div>
+                        <button onclick="markDayComplete()" id="completeDayBtn" class="glow-button bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm px-6 py-3 rounded-xl flex items-center gap-2 transition-transform active:scale-95">
+                            <i class="fa-solid fa-check-double"></i> Finish Workout
+                        </button>
+                    </div>
+
+                    <div id="restDayView" class="hidden py-16 text-center space-y-4">
+                        <div class="w-20 h-20 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-3xl mx-auto border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                            <i class="fa-solid fa-bed-pulse"></i>
+                        </div>
+                        <h4 class="text-2xl font-bold text-white">Rest & Recovery Matrix</h4>
+                        <p class="text-gray-400 max-w-md mx-auto">
+                            Muscles grow outside the gym. For a 15-year-old, sleep is highly anabolic. Aim for 8-9 hours tonight. Hydrate, eat your protein, and let your central nervous system recover.
+                        </p>
+                    </div>
+
+                    <div id="workoutExercisesList" class="mt-6 space-y-4">
+                        <!-- Exercise Items Injected Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Rest Timer & Tools -->
+            <div class="space-y-6">
+                
+                <!-- Smart Rest Timer -->
+                <div class="glass-card rounded-3xl p-6 text-center space-y-5 border-slate-700/50">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold uppercase tracking-widest text-brand-400 flex items-center gap-2">
+                            <i class="fa-solid fa-stopwatch"></i> Rest Timer
+                        </span>
+                    </div>
+
+                    <div>
+                        <div id="timerDisplay" class="text-6xl font-black font-mono tracking-tighter text-white gradient-text drop-shadow-lg">
+                            01:30
+                        </div>
+                        <p id="timerStatus" class="text-sm text-gray-400 mt-2 font-medium">Ready</p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="setTimer(60)" class="bg-slate-800/80 hover:bg-slate-700 text-sm py-2.5 rounded-xl text-gray-300 font-semibold transition">60s</button>
+                        <button onclick="setTimer(90)" class="bg-slate-800/80 hover:bg-slate-700 text-sm py-2.5 rounded-xl text-gray-300 font-semibold transition border border-slate-600">90s</button>
+                        <button onclick="setTimer(120)" class="bg-slate-800/80 hover:bg-slate-700 text-sm py-2.5 rounded-xl text-gray-300 font-semibold transition">120s</button>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button onclick="toggleTimer()" id="timerToggleBtn" class="flex-1 glow-button bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm py-3 rounded-xl flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> Start Rest
+                        </button>
+                        <button onclick="resetTimer()" class="bg-slate-800 hover:bg-slate-700 text-gray-300 px-4 py-3 rounded-xl transition">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Diet / Macros Widget -->
+                <div class="glass-card rounded-3xl p-6 space-y-5 border-slate-700/50">
+                    <h4 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800/80 pb-3">
+                        <i class="fa-solid fa-apple-whole text-emerald-400"></i> Lean Bulk Macros
+                    </h4>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">Daily Calories (Target)</span>
+                                <span class="text-white font-bold">2,400 kcal</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-2">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: 80%"></div>
+                            </div>
+                            <p class="text-[10px] text-emerald-400 mt-1 text-right">+200 Surplus for clean mass</p>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">Protein Goal</span>
+                                <span class="text-white font-bold">130g</span>
+                            </div>
+                            <div class="w-full bg-slate-800 rounded-full h-2">
+                                <div class="bg-brand-500 h-2 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <p class="text-[10px] text-brand-400 mt-1 text-right">Crucial for muscle synthesis</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="exerciseModal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+        <div class="glass-card w-full max-w-5xl h-[85vh] md:h-[70vh] flex flex-col md:flex-row rounded-3xl overflow-hidden border border-slate-600 shadow-2xl relative transform scale-95 transition-transform duration-300" id="modalContent">
+            
+            <!-- Close Button -->
+            <button onclick="closeModal()" class="absolute top-4 right-4 z-20 bg-slate-800/80 hover:bg-red-500/80 text-white w-10 h-10 rounded-full flex items-center justify-center transition backdrop-blur-sm">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- 3D Canvas Area (Left Side) -->
+            <div class="w-full md:w-3/5 h-1/2 md:h-full bg-gradient-to-b from-slate-900 to-black relative border-b md:border-b-0 md:border-r border-slate-800">
+                <div class="absolute top-4 left-4 z-10">
+                    <span class="bg-brand-600 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider shadow-lg flex items-center gap-1">
+                        <i class="fa-solid fa-cube"></i> Interactive 3D Model
+                    </span>
+                    <p class="text-[10px] text-gray-400 mt-1 ml-1">Drag to rotate • Scroll to zoom</p>
+                </div>
+                <div id="canvas-container" class="w-full h-full"></div>
+            </div>
+
+            <!-- Instructions Area (Right Side) -->
+            <div class="w-full md:w-2/5 h-1/2 md:h-full p-6 sm:p-8 overflow-y-auto bg-slate-900/90 relative">
+                <div class="flex flex-col h-full">
+                    <div>
+                        <span id="modalTarget" class="text-xs font-bold text-brand-400 uppercase tracking-widest mb-2 block">Target Muscle</span>
+                        <h2 id="modalTitle" class="text-2xl sm:text-3xl font-extrabold text-white mb-6 leading-tight">Exercise Name</h2>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-white font-bold flex items-center gap-2 mb-3">
+                                    <i class="fa-solid fa-list-check text-emerald-400"></i> How To Perform:
+                                </h3>
+                                <ul id="modalInstructionsList" class="space-y-3 text-sm text-gray-300 list-none">
+                                    <!-- Instructions generated by JS -->
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-brand-500/10 border border-brand-500/20 p-4 rounded-xl">
+                                <h3 class="text-brand-400 font-bold text-xs uppercase mb-1">Pro Aesthetic Tip:</h3>
+                                <p id="modalProTip" class="text-sm text-gray-300 italic"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Detailed structured data including instructions and 3D equipment types
+        // equipment options: 'dumbbell', 'barbell', 'machine', 'bodyweight', 'cable'
+        const workoutData = {
+            Monday: {
+                title: "Push A (Chest & Delts)", type: "Push A", focus: "Upper Chest, Side Delts, Triceps",
+                exercises: [
+                    { 
+                        name: "Incline Dumbbell Press", sets: "4", reps: "8-10", equipment: "dumbbell", target: "Upper Chest",
+                        instructions: [
+                            "Set the bench angle to 30 degrees.",
+                            "Plant your feet firmly on the ground and arch your upper back slightly.",
+                            "Press the dumbbells up and together, but don't clink them.",
+                            "Lower them slowly (2 seconds) until you feel a deep stretch in your upper chest."
+                        ],
+                        tip: "Upper chest is crucial for the aesthetic square chest look."
+                    },
+                    { 
+                        name: "Flat Dumbbell Press", sets: "3", reps: "10-12", equipment: "dumbbell", target: "Mid/Lower Chest",
+                        instructions: [
+                            "Lie flat on the bench, retract your scapula (pinch shoulder blades together).",
+                            "Tuck your elbows to about a 45-degree angle (don't flare them straight out).",
+                            "Press explosively, squeeze chest at the top, and lower under control."
+                        ],
+                        tip: "Dumbbells provide a better stretch than a barbell for chest hypertrophy."
+                    },
+                    { 
+                        name: "Dumbbell Lateral Raises", sets: "4", reps: "12-15", equipment: "dumbbell", target: "Side Deltoids",
+                        instructions: [
+                            "Stand tall, holding light dumbbells at your sides.",
+                            "Slightly bend your elbows and lean forward just a tiny bit.",
+                            "Raise the dumbbells out to the sides until your arms are parallel to the floor.",
+                            "Imagine pouring water out of a pitcher at the top to isolate the side delt."
+                        ],
+                        tip: "This is the #1 exercise for creating a broad, wide upper body (V-Taper)."
+                    },
+                    { 
+                        name: "Overhead Tricep Extension", sets: "3", reps: "10-12", equipment: "dumbbell", target: "Triceps (Long Head)",
+                        instructions: [
+                            "Hold one dumbbell with both hands overhead.",
+                            "Keep your elbows pointed straight up and close to your head.",
+                            "Lower the weight behind your head until your forearms touch your biceps, then extend back up."
+                        ],
+                        tip: "The long head makes up the bulk of your arm size."
+                    },
+                    { 
+                        name: "Hanging Knee Raises", sets: "3", reps: "15", equipment: "bodyweight", target: "Lower Abs",
+                        instructions: [
+                            "Hang from a pull-up bar with a steady grip.",
+                            "Without swinging, use your core to pull your knees up to your chest.",
+                            "Slowly lower them back down to a dead hang."
+                        ],
+                        tip: "Controls the momentum to build deep core strength."
+                    }
+                ]
+            },
+            Tuesday: {
+                title: "Pull A (Back Width)", type: "Pull A", focus: "Lats, Upper Back, Biceps",
+                exercises: [
+                    { 
+                        name: "Lat Pulldowns", sets: "4", reps: "8-12", equipment: "machine", target: "Latissimus Dorsi",
+                        instructions: [
+                            "Sit at the machine, secure your knees, and take a wide overhand grip.",
+                            "Pull the bar down to your upper chest while leaning back slightly.",
+                            "Drive your elbows down and back, squeezing your lats hard.",
+                            "Control the weight on the way up to get a full stretch."
+                        ],
+                        tip: "Wide lats make your waist look much smaller."
+                    },
+                    { 
+                        name: "Chest-Supported Rows", sets: "3", reps: "10-12", equipment: "dumbbell", target: "Upper Back & Rhomboids",
+                        instructions: [
+                            "Set an incline bench to 45 degrees and lie face down on it.",
+                            "Hold dumbbells hanging straight down.",
+                            "Row the weights up by pulling your elbows back and squeezing your shoulder blades together."
+                        ],
+                        tip: "The bench stops you from using momentum, forcing pure back growth."
+                    },
+                    { 
+                        name: "Bicep Dumbbell Curls", sets: "4", reps: "10-12", equipment: "dumbbell", target: "Biceps Brachii",
+                        instructions: [
+                            "Stand with dumbbells hanging at your sides, palms facing forward.",
+                            "Curl the weights up without swinging your torso.",
+                            "Squeeze hard at the top, then lower for a full 2-second count."
+                        ],
+                        tip: "Keep your elbows pinned to your sides."
+                    },
+                    { 
+                        name: "Plank Hold", sets: "3", reps: "60s", equipment: "bodyweight", target: "Core Stability",
+                        instructions: [
+                            "Rest on your forearms and toes, keeping your body in a perfectly straight line.",
+                            "Squeeze your glutes and brace your abs as if you're about to be punched.",
+                            "Hold the tension, don't let your hips sag."
+                        ],
+                        tip: "Builds a tight, flat midsection."
+                    }
+                ]
+            },
+            Wednesday: {
+                title: "Legs & Core A", type: "Legs A", focus: "Quads, Hamstrings, Abs",
+                exercises: [
+                    { 
+                        name: "Goblet Squats", sets: "4", reps: "8-10", equipment: "dumbbell", target: "Quadriceps & Glutes",
+                        instructions: [
+                            "Hold one heavy dumbbell vertically against your chest.",
+                            "Keep your chest up and squat down until your hips are below your knees.",
+                            "Push through your whole foot to stand back up."
+                        ],
+                        tip: "Excellent for building athletic legs safely without straining the lower back."
+                    },
+                    { 
+                        name: "Romanian Deadlifts (RDLs)", sets: "3", reps: "10-12", equipment: "barbell", target: "Hamstrings",
+                        instructions: [
+                            "Hold a barbell (or dumbbells) in front of your thighs.",
+                            "Keep a slight bend in your knees and push your hips straight back.",
+                            "Lower the weight until you feel a deep stretch in the back of your legs, keeping your back totally flat.",
+                            "Squeeze glutes to return to the top."
+                        ],
+                        tip: "Crucial for hamstring development and preventing leg imbalances."
+                    },
+                    { 
+                        name: "Standing Calf Raises", sets: "4", reps: "15-20", equipment: "machine", target: "Calves",
+                        instructions: [
+                            "Stand with the balls of your feet on an elevated surface.",
+                            "Drop your heels down as far as possible for a deep stretch.",
+                            "Explode up onto your toes and hold the squeeze for 1 second at the top."
+                        ],
+                        tip: "Calves need high reps and deep stretches to grow."
+                    },
+                    { 
+                        name: "Crunches", sets: "3", reps: "15-20", equipment: "bodyweight", target: "Upper Abs",
+                        instructions: [
+                            "Lie on your back with knees bent.",
+                            "Place hands lightly behind your head.",
+                            "Exhale and curl your upper back off the floor, squeezing your abs.",
+                            "Do not pull on your neck."
+                        ],
+                        tip: "Focus on the contraction, not how high you sit up."
+                    }
+                ]
+            },
+            Thursday: {
+                title: "Push B (Shoulder Focus)", type: "Push B", focus: "Delts & Chest",
+                exercises: [
+                    { 
+                        name: "Dumbbell Shoulder Press", sets: "4", reps: "8-10", equipment: "dumbbell", target: "Front & Side Deltoids",
+                        instructions: [
+                            "Sit on a bench with back support.",
+                            "Press dumbbells straight up overhead.",
+                            "Lower them until they are just below ear level.",
+                            "Keep your core tight and don't overarch your lower back."
+                        ],
+                        tip: "Builds dense, 3D shoulders."
+                    },
+                    { 
+                        name: "Tricep Pushdowns", sets: "4", reps: "12", equipment: "cable", target: "Triceps",
+                        instructions: [
+                            "Attach a rope to a high cable pulley.",
+                            "Keep elbows pinned to your sides.",
+                            "Push the rope down and spread the ends apart at the bottom to lock out the triceps."
+                        ],
+                        tip: "Spreading the rope maximizes the contraction."
+                    },
+                    { 
+                        name: "Lateral Raises", sets: "4", reps: "15", equipment: "dumbbell", target: "Side Deltoids",
+                        instructions: ["Same as Monday. Focus on high volume and the burn."],
+                        tip: "Hit side delts twice a week for maximum width."
+                    },
+                    { 
+                        name: "Russian Twists", sets: "3", reps: "20", equipment: "bodyweight", target: "Obliques",
+                        instructions: [
+                            "Sit on the floor, lean back slightly, and lift your feet.",
+                            "Twist your torso side to side, touching the ground on each side."
+                        ],
+                        tip: "Frames the 6-pack with tight obliques."
+                    }
+                ]
+            },
+            Friday: {
+                title: "Pull B (Thickness & Biceps)", type: "Pull B", focus: "Back Thickness & Arms",
+                exercises: [
+                    { 
+                        name: "Single-Arm Dumbbell Row", sets: "3", reps: "10", equipment: "dumbbell", target: "Lats & Mid-Back",
+                        instructions: [
+                            "Place one knee and hand on a bench.",
+                            "Hold a dumbbell in the free hand, let it hang for a stretch.",
+                            "Pull the dumbbell up toward your hip, keeping your elbow tucked.",
+                            "Lower slowly."
+                        ],
+                        tip: "Pulling to the hip targets the lower lats."
+                    },
+                    { 
+                        name: "Hammer Curls", sets: "3", reps: "12", equipment: "dumbbell", target: "Brachialis & Forearms",
+                        instructions: [
+                            "Hold dumbbells with a neutral grip (palms facing each other).",
+                            "Curl up keeping the neutral grip.",
+                            "Squeeze at the top."
+                        ],
+                        tip: "Builds arm thickness from the front view."
+                    },
+                    { 
+                        name: "Face Pulls", sets: "3", reps: "15", equipment: "cable", target: "Rear Deltoids",
+                        instructions: [
+                            "Set cable to face height with a rope attachment.",
+                            "Pull the rope towards your face, flaring your elbows high and wide.",
+                            "Squeeze your rear delts and upper back at the end of the movement."
+                        ],
+                        tip: "Vital for posture and 3D shoulder aesthetics."
+                    },
+                    { 
+                        name: "Ab Vacuums", sets: "3", reps: "30s", equipment: "bodyweight", target: "Transverse Abdominis",
+                        instructions: [
+                            "Exhale all the air out of your lungs.",
+                            "Suck your stomach in as hard as you can (try to touch belly button to spine).",
+                            "Hold for 20-30 seconds."
+                        ],
+                        tip: "The golden era secret to a tiny waist."
+                    }
+                ]
+            },
+            Saturday: {
+                title: "Rest & Recovery", type: "Rest", focus: "Growth & Repair",
+                exercises: []
+            },
+            Sunday: {
+                title: "Legs & Core B", type: "Legs B", focus: "Quads & Lower Abs",
+                exercises: [
+                    { 
+                        name: "Bulgarian Split Squats", sets: "3", reps: "10/leg", equipment: "dumbbell", target: "Quads & Glutes",
+                        instructions: [
+                            "Stand a few feet in front of a bench, place one foot resting on it behind you.",
+                            "Holding dumbbells, drop your back knee toward the floor.",
+                            "Keep your front foot flat and push back up."
+                        ],
+                        tip: "Incredible for leg definition and balance."
+                    },
+                    { 
+                        name: "Lying Leg Curls", sets: "3", reps: "12", equipment: "machine", target: "Hamstrings",
+                        instructions: [
+                            "Lie face down on the machine pad.",
+                            "Curl your heels toward your glutes.",
+                            "Control the negative (lowering) phase."
+                        ],
+                        tip: "Isolates the hamstrings effectively."
+                    },
+                    { 
+                        name: "Bicycle Crunches", sets: "3", reps: "20", equipment: "bodyweight", target: "Abs & Obliques",
+                        instructions: [
+                            "Lie flat, hands behind head.",
+                            "Bring one knee to chest while twisting the opposite elbow to meet it.",
+                            "Alternate sides in a fluid, pedaling motion."
+                        ],
+                        tip: "Hits entire core simultaneously."
+                    }
+                ]
+            }
+        };
+
+        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        let currentSelectedDay = "";
+        let userLogs = JSON.parse(localStorage.getItem('aestheticLogs3D')) || {};
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const todayIndex = new Date().getDay();
+            currentSelectedDay = dayNames[todayIndex];
+            
+            document.getElementById("headerTodayDay").textContent = currentSelectedDay;
+            updateStreakDisplay();
+            
+            renderDayTabs(currentSelectedDay);
+            renderActiveDayView(currentSelectedDay);
+        });
+
+        function renderDayTabs(todayName) {
+            const tabsContainer = document.getElementById("dayTabsContainer");
+            tabsContainer.innerHTML = "";
+
+            dayNames.forEach(day => {
+                const isToday = (day === todayName);
+                const isSelected = (day === currentSelectedDay);
+                const isRest = (day === "Saturday");
+
+                const btn = document.createElement("button");
+                btn.onclick = () => {
+                    currentSelectedDay = day;
+                    renderDayTabs(todayName);
+                    renderActiveDayView(day);
+                };
+                
+                let classes = "flex flex-col items-center justify-center py-3 px-1 rounded-2xl transition-all duration-300 border ";
+                if (isSelected) {
+                    classes += "glass-card-active border-brand-500 transform -translate-y-1 ";
+                } else {
+                    classes += "glass-card border-slate-700 hover:border-brand-400 hover:bg-slate-800/80 ";
+                }
+
+                btn.className = classes;
+                btn.innerHTML = `
+                    <span class="text-[10px] uppercase font-bold tracking-wider ${isToday ? 'text-brand-accent' : 'text-gray-400'}">${isToday ? 'Today' : day.substring(0,3)}</span>
+                    <span class="text-sm font-extrabold text-white mt-1">${day.substring(0,3)}</span>
+                    ${isRest ? '<span class="text-[9px] text-amber-400 font-bold mt-1 bg-amber-400/10 px-2 py-0.5 rounded-full">REST</span>' : '<span class="text-[9px] text-brand-400 font-bold mt-1 bg-brand-500/10 px-2 py-0.5 rounded-full">TRAIN</span>'}
+                `;
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        function renderActiveDayView(day) {
+            const data = workoutData[day];
+            document.getElementById("activeDayBadge").textContent = day.toUpperCase();
+            document.getElementById("activeFocusTitle").textContent = data.type + " • " + data.focus;
+            document.getElementById("activeRoutineName").textContent = data.title;
+
+            const listContainer = document.getElementById("workoutExercisesList");
+            const restView = document.getElementById("restDayView");
+            const completeBtn = document.getElementById("completeDayBtn");
+
+            listContainer.innerHTML = "";
+
+            if (day === "Saturday") {
+                restView.classList.remove("hidden");
+                listContainer.classList.add("hidden");
+                completeBtn.classList.add("hidden");
+                return;
+            }
+
+            restView.classList.add("hidden");
+            listContainer.classList.remove("hidden");
+            completeBtn.classList.remove("hidden");
+
+            const dayLogKey = getTodayLogKey(day);
+            const savedDayData = userLogs[dayLogKey] || {};
+
+            data.exercises.forEach((ex, index) => {
+                const exKey = `ex_${index}`;
+                const isCompleted = savedDayData[exKey] ? savedDayData[exKey].completed : false;
+                const savedWeight = savedDayData[exKey] ? savedDayData[exKey].weight || "" : "";
+
+                const item = document.createElement("div");
+                item.className = `p-4 sm:p-5 rounded-2xl border transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isCompleted ? 'bg-emerald-900/10 border-emerald-500/30' : 'bg-slate-800/40 border-slate-700 hover:border-slate-500'}`;
+                
+                item.innerHTML = `
+                    <div class="flex items-start gap-4">
+                        <button onclick="toggleExerciseCheck('${dayLogKey}', '${exKey}')" class="mt-1 w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-colors flex-shrink-0 ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'border-slate-600 text-transparent hover:border-brand-500'}">
+                            <i class="fa-solid fa-check text-sm"></i>
+                        </button>
+                        <div>
+                            <h4 class="font-bold text-base text-white ${isCompleted ? 'line-through text-gray-500' : ''}">${ex.name}</h4>
+                            <div class="flex items-center gap-3 mt-1">
+                                <span class="text-xs font-semibold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded-md">${ex.sets} Sets • ${ex.reps} Reps</span>
+                                <span class="text-[10px] text-gray-400 uppercase tracking-wide flex items-center gap-1"><i class="fa-solid fa-bullseye text-amber-500"></i> ${ex.target}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 self-start sm:self-center ml-12 sm:ml-0">
+                        <div class="flex items-center bg-slate-900/80 rounded-lg border border-slate-700 overflow-hidden">
+                            <input type="number" placeholder="kg" value="${savedWeight}" 
+                                onchange="saveExerciseWeight('${dayLogKey}', '${exKey}', this.value)"
+                                class="w-16 bg-transparent px-3 py-2 text-sm text-center text-white focus:outline-none placeholder-gray-600 appearance-none">
+                            <span class="text-xs text-gray-500 pr-3 font-semibold">KG</span>
+                        </div>
+                        <button onclick="openModal('${day}', ${index})" class="bg-brand-600/20 hover:bg-brand-600 text-brand-400 hover:text-white border border-brand-500/30 p-2 rounded-lg text-sm transition-all duration-300" title="View 3D & Instructions">
+                            <i class="fa-solid fa-cube"></i>
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function getTodayLogKey(day) {
+            const d = new Date();
+            return `${d.getFullYear()}_${d.getMonth() + 1}_${d.getDate()}_${day}`;
+        }
+
+        function toggleExerciseCheck(dayLogKey, exKey) {
+            if (!userLogs[dayLogKey]) userLogs[dayLogKey] = {};
+            if (!userLogs[dayLogKey][exKey]) userLogs[dayLogKey][exKey] = { completed: false, weight: "" };
+
+            userLogs[dayLogKey][exKey].completed = !userLogs[dayLogKey][exKey].completed;
+            localStorage.setItem('aestheticLogs3D', JSON.stringify(userLogs));
+            renderActiveDayView(currentSelectedDay);
+        }
+
+        function saveExerciseWeight(dayLogKey, exKey, val) {
+            if (!userLogs[dayLogKey]) userLogs[dayLogKey] = {};
+            if (!userLogs[dayLogKey][exKey]) userLogs[dayLogKey][exKey] = { completed: false, weight: "" };
+            userLogs[dayLogKey][exKey].weight = val;
+            localStorage.setItem('aestheticLogs3D', JSON.stringify(userLogs));
+        }
+
+        function markDayComplete() {
+            let streak = parseInt(localStorage.getItem('aestheticStreak3D') || "0");
+            streak += 1;
+            localStorage.setItem('aestheticStreak3D', streak);
+            updateStreakDisplay();
+            
+            const btn = document.getElementById("completeDayBtn");
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> Recorded!`;
+            btn.classList.remove('bg-brand-600');
+            btn.classList.add('bg-emerald-500');
+            
+            setTimeout(() => {
+                btn.innerHTML = `<i class="fa-solid fa-check-double"></i> Finish Workout`;
+                btn.classList.add('bg-brand-600');
+                btn.classList.remove('bg-emerald-500');
+            }, 3000);
+        }
+
+        function updateStreakDisplay() {
+            const streak = localStorage.getItem('aestheticStreak3D') || "0";
+            document.getElementById("headerStreak").textContent = streak + " Days";
+        }
+
+        let timerInterval = null;
+        let timerSeconds = 90;
+        let isTimerRunning = false;
+
+        function setTimer(sec) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerSeconds = sec;
+            updateTimerDisplay();
+            document.getElementById("timerToggleBtn").innerHTML = `<i class="fa-solid fa-play"></i> Start Rest`;
+            document.getElementById("timerStatus").textContent = "Timer Ready";
+            document.getElementById("timerDisplay").classList.remove("text-emerald-400");
+        }
+
+        function toggleTimer() {
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                document.getElementById("timerToggleBtn").innerHTML = `<i class="fa-solid fa-play"></i> Resume`;
+                document.getElementById("timerStatus").textContent = "Paused";
+            } else {
+                if(timerSeconds <= 0) setTimer(90);
+                isTimerRunning = true;
+                document.getElementById("timerToggleBtn").innerHTML = `<i class="fa-solid fa-pause"></i> Pause`;
+                document.getElementById("timerStatus").textContent = "Resting, catch your breath...";
+                document.getElementById("timerDisplay").classList.remove("text-emerald-400");
+                
+                timerInterval = setInterval(() => {
+                    if (timerSeconds > 0) {
+                        timerSeconds--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        playTimerBeep();
+                        document.getElementById("timerStatus").textContent = "⚡ TIME TO LIFT!";
+                        document.getElementById("timerDisplay").classList.add("text-emerald-400");
+                        document.getElementById("timerToggleBtn").innerHTML = `<i class="fa-solid fa-play"></i> Restart`;
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            setTimer(90);
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            document.getElementById("timerDisplay").textContent = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function playTimerBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+                
+                setTimeout(() => {
+                    const osc2 = ctx.createOscillator();
+                    osc2.type = 'square';
+                    osc2.frequency.setValueAtTime(1200, ctx.currentTime);
+                    osc2.connect(ctx.destination);
+                    osc2.start();
+                    osc2.stop(ctx.currentTime + 0.5);
+                }, 400);
+            } catch (e) { console.log("Audio API blocked or unsupported"); }
+        }
+
+
+        
+        let scene, camera, renderer, currentEquipmentGroup, animationFrameId;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        function openModal(day, exerciseIndex) {
+            const ex = workoutData[day].exercises[exerciseIndex];
+            
+            // Populate Modal Text
+            document.getElementById('modalTitle').textContent = ex.name;
+            document.getElementById('modalTarget').textContent = ex.target;
+            document.getElementById('modalProTip').textContent = ex.tip;
+            
+            const list = document.getElementById('modalInstructionsList');
+            list.innerHTML = "";
+            ex.instructions.forEach((step, idx) => {
+                list.innerHTML += `<li class="flex items-start gap-3">
+                    <span class="bg-slate-800 text-brand-400 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 mt-0.5">${idx+1}</span>
+                    <span>${step}</span>
+                </li>`;
+            });
+
+            // Show Modal with animation
+            const modal = document.getElementById('exerciseModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            // small delay for css transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('opacity-100');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+
+            // Init 3D Scene
+            init3DScene(ex.equipment);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('exerciseModal');
+            const content = document.getElementById('modalContent');
+            
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                cleanup3D();
+            }, 300); // match transition duration
+        }
+
+        function init3DScene(equipmentType) {
+            cleanup3D(); // ensure clean state
+            
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Setup Scene
+            scene = new THREE.Scene();
+            
+            // Setup Camera
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            camera.position.z = 5;
+            camera.position.y = 1;
+
+            // Setup Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 5, 5);
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x6366f1, 1, 10); // Brand color glow
+            pointLight.position.set(-2, 2, -2);
+            scene.add(pointLight);
+
+            // Generate Equipment Model
+            currentEquipmentGroup = generateEquipmentModel(equipmentType);
+            scene.add(currentEquipmentGroup);
+
+            // Interaction Event Listeners
+            setupMouseControls(container);
+            
+            // Handle Resize
+            window.addEventListener('resize', onWindowResize, false);
+
+            // Start Animation Loop
+            animate3D();
+        }
+
+        function generateEquipmentModel(type) {
+            const group = new THREE.Group();
+            
+            // Common Materials
+            const metalMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x888888, metalness: 0.8, roughness: 0.2 
+            });
+            const blackRubberMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x1a1a1a, metalness: 0.2, roughness: 0.8 
+            });
+            const accentMaterial = new THREE.MeshStandardMaterial({
+                color: 0x6366f1, metalness: 0.5, roughness: 0.5
+            });
+
+            if (type === 'dumbbell') {
+                // Handle
+                const handleGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.2, 32);
+                const handle = new THREE.Mesh(handleGeo, metalMaterial);
+                handle.rotation.z = Math.PI / 2;
+                group.add(handle);
+
+                // Weights (Hex style approx)
+                const weightGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 8);
+                const leftWeight = new THREE.Mesh(weightGeo, blackRubberMaterial);
+                leftWeight.position.x = -0.6;
+                leftWeight.rotation.z = Math.PI / 2;
+                group.add(leftWeight);
+
+                const rightWeight = leftWeight.clone();
+                rightWeight.position.x = 0.6;
+                group.add(rightWeight);
+
+                // Outer Caps
+                const capGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 8);
+                const leftCap = new THREE.Mesh(capGeo, blackRubberMaterial);
+                leftCap.position.x = -0.8;
+                leftCap.rotation.z = Math.PI / 2;
+                group.add(leftCap);
+                
+                const rightCap = leftCap.clone();
+                rightCap.position.x = 0.8;
+                group.add(rightCap);
+
+            } else if (type === 'barbell') {
+                // Bar
+                const barGeo = new THREE.CylinderGeometry(0.05, 0.05, 4, 32);
+                const bar = new THREE.Mesh(barGeo, metalMaterial);
+                bar.rotation.z = Math.PI / 2;
+                group.add(bar);
+
+                // Plates
+                const plateGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.15, 32);
+                const positions = [-1.5, -1.7, 1.5, 1.7];
+                positions.forEach(x => {
+                    const plate = new THREE.Mesh(plateGeo, blackRubberMaterial);
+                    plate.position.x = x;
+                    plate.rotation.z = Math.PI / 2;
+                    group.add(plate);
+                });
+                camera.position.z = 6; // pull back for barbell
+
+            } else if (type === 'machine' || type === 'cable') {
+                // Abstract Machine Representation
+                const frameGeo = new THREE.BoxGeometry(0.2, 3, 0.2);
+                const leftFrame = new THREE.Mesh(frameGeo, metalMaterial);
+                leftFrame.position.set(-1, 0, 0);
+                group.add(leftFrame);
+                
+                const rightFrame = leftFrame.clone();
+                rightFrame.position.set(1, 0, 0);
+                group.add(rightFrame);
+
+                const topFrameGeo = new THREE.BoxGeometry(2.2, 0.2, 0.2);
+                const topFrame = new THREE.Mesh(topFrameGeo, metalMaterial);
+                topFrame.position.set(0, 1.4, 0);
+                group.add(topFrame);
+
+                // Weight Stack
+                const stackGeo = new THREE.BoxGeometry(0.8, 1.5, 0.4);
+                const stack = new THREE.Mesh(stackGeo, blackRubberMaterial);
+                stack.position.set(0, -0.6, 0);
+                group.add(stack);
+
+                // Pulley / Cable highlight
+                const pulleyGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 16);
+                const pulley = new THREE.Mesh(pulleyGeo, accentMaterial);
+                pulley.position.set(0, 1.2, 0);
+                pulley.rotation.x = Math.PI / 2;
+                group.add(pulley);
+                
+            } else {
+                // Bodyweight - Abstract generic block/logo shape
+                const geo = new THREE.TorusGeometry(0.8, 0.2, 16, 50);
+                const mesh = new THREE.Mesh(geo, accentMaterial);
+                group.add(mesh);
+                
+                const innerGeo = new THREE.SphereGeometry(0.4, 32, 32);
+                const inner = new THREE.Mesh(innerGeo, metalMaterial);
+                group.add(inner);
+            }
+
+            // Slight initial rotation for aesthetics
+            group.rotation.x = 0.2;
+            group.rotation.y = -0.5;
+
+            return group;
+        }
+
+        function setupMouseControls(container) {
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.offsetX, y: e.offsetY };
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                if (isDragging && currentEquipmentGroup) {
+                    const deltaMove = {
+                        x: e.offsetX - previousMousePosition.x,
+                        y: e.offsetY - previousMousePosition.y
+                    };
+
+                    currentEquipmentGroup.rotation.y += deltaMove.x * 0.01;
+                    currentEquipmentGroup.rotation.x += deltaMove.y * 0.01;
+
+                    previousMousePosition = { x: e.offsetX, y: e.offsetY };
+                }
+            });
+
+            window.addEventListener('mouseup', () => { isDragging = false; });
+            
+            // Touch support
+            container.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }, {passive: true});
+
+            container.addEventListener('touchmove', (e) => {
+                if (isDragging && currentEquipmentGroup) {
+                    const deltaMove = {
+                        x: e.touches[0].clientX - previousMousePosition.x,
+                        y: e.touches[0].clientY - previousMousePosition.y
+                    };
+                    currentEquipmentGroup.rotation.y += deltaMove.x * 0.01;
+                    currentEquipmentGroup.rotation.x += deltaMove.y * 0.01;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            }, {passive: true});
+
+            window.addEventListener('touchend', () => { isDragging = false; });
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if(camera && renderer && container) {
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            }
+        }
+
+        function animate3D() {
+            animationFrameId = requestAnimationFrame(animate3D);
+            
+            // Auto rotate slightly if not being dragged
+            if (!isDragging && currentEquipmentGroup) {
+                currentEquipmentGroup.rotation.y += 0.005;
+            }
+            
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        function cleanup3D() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (renderer && renderer.domElement) {
+                renderer.domElement.remove();
+                renderer.dispose();
+            }
+            window.removeEventListener('resize', onWindowResize, false);
+            scene = null;
+            camera = null;
+            renderer = null;
+            currentEquipmentGroup = null;
+        }
+
+    </script>
+</body>
+</html>
